@@ -1,31 +1,66 @@
-import { TaskType } from "@shared/schema";
+import { TaskType, InsertTask } from "@shared/schema";
+import { apiRequest } from "./queryClient";
 
-// Local storage key
-const STORAGE_KEY = "taskflow-tasks";
+// API endpoints
+const API_TASKS = "/api/tasks";
 
-// Initialize tasks from localStorage
-export const getTasks = (): TaskType[] => {
+// Get all tasks from the API
+export const getTasks = async (): Promise<TaskType[]> => {
   try {
-    const storedTasks = localStorage.getItem(STORAGE_KEY);
-    return storedTasks ? JSON.parse(storedTasks) : [];
+    return await apiRequest<TaskType[]>({
+      method: "GET",
+      url: API_TASKS
+    });
   } catch (error) {
-    console.error("Error loading tasks from localStorage:", error);
+    console.error("Error fetching tasks from API:", error);
+    // Return empty array on error
     return [];
   }
 };
 
-// Save tasks to localStorage
-export const saveTasks = (tasks: TaskType[]): void => {
+// Create a new task
+export const createTask = async (text: string): Promise<TaskType | null> => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    const newTask: InsertTask = {
+      text,
+      completed: false
+    };
+    
+    return await apiRequest<TaskType>({
+      method: "POST",
+      url: API_TASKS,
+      data: newTask
+    });
   } catch (error) {
-    console.error("Error saving tasks to localStorage:", error);
+    console.error("Error creating task:", error);
+    return null;
   }
 };
 
-// Get next task ID
-export const getNextId = (tasks: TaskType[]): number => {
-  return tasks.length > 0
-    ? Math.max(...tasks.map((task) => task.id)) + 1
-    : 1;
+// Update an existing task
+export const updateTask = async (task: TaskType): Promise<TaskType | null> => {
+  try {
+    return await apiRequest<TaskType>({
+      method: "PUT",
+      url: `${API_TASKS}/${task.id}`,
+      data: task
+    });
+  } catch (error) {
+    console.error("Error updating task:", error);
+    return null;
+  }
+};
+
+// Delete a task
+export const deleteTask = async (id: number): Promise<boolean> => {
+  try {
+    await apiRequest({
+      method: "DELETE",
+      url: `${API_TASKS}/${id}`
+    });
+    return true;
+  } catch (error) {
+    console.error("Error deleting task:", error);
+    return false;
+  }
 };
