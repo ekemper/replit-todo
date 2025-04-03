@@ -62,9 +62,12 @@ app.use((req, res, next) => {
   const port = process.env.NODE_ENV === 'production' ? 8080 : 5000;
   server.listen({
     port,
-    host: "0.0.0.0",
+    host: "0.0.0.0", // Bind to all interfaces
     reusePort: true,
   }, () => {
-    log(`serving on port ${port}`);
+    log(`Server running at:`);
+    log(`- http://localhost:${port}`);
+    log(`- http://127.0.0.1:${port}`);
+    log(`- http://0.0.0.0:${port} (all interfaces)`);
   });
 })();

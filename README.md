@@ -58,15 +58,26 @@ If you encounter issues with the Docker setup, try the following steps:
    docker ps
    ```
 
-2. Use the provided debug script to diagnose issues:
+2. Try the comprehensive connection testing script (tests all access methods):
+   ```bash
+   ./docker-connection-test.sh
+   ```
+
+3. Use the provided debug script for detailed diagnostics:
    ```bash
    ./docker-debug.sh
    ```
    
-3. Alternative startup with verbose logging:
+4. Alternative startup with verbose logging:
    ```bash
    ./docker-start.sh
    ```
+
+5. Try accessing the application using alternative URLs:
+   - http://localhost:8080 (primary URL)
+   - http://localhost:3000 (alternative port)
+   - http://127.0.0.1:8080 (explicit loopback address)
+   - http://[container-ip]:8080 (direct container IP, get from docker-connection-test.sh)
 
 #### Common Issues and Solutions
 
