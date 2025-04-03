@@ -15,16 +15,21 @@ services:
       - PGDATABASE=postgres
       - PGPORT=5432
       - NODE_ENV=production
+      # Adding explicit DEBUG environment variable
+      - DEBUG=express:*
+    # Use default network mode for better host connectivity
+    # network_mode: "bridge"
     depends_on:
       db:
         condition: service_healthy
     restart: unless-stopped
+    # Disable healthcheck initially for debugging
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/api/tasks"]
+      test: ["CMD", "curl", "-v", "http://localhost:8080/api/tasks"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 30s
+      retries: 5
+      start_period: 40s
 
   db:
     image: postgres:15

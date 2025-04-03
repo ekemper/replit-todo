@@ -47,6 +47,47 @@ To stop the application and remove all data (including the database volume), use
 docker-compose down -v
 ```
 
+### Troubleshooting Docker Setup
+
+If you encounter issues with the Docker setup, try the following steps:
+
+#### Connection Issues (localhost refused to connect)
+
+1. Make sure Docker is running correctly:
+   ```bash
+   docker ps
+   ```
+
+2. Use the provided debug script to diagnose issues:
+   ```bash
+   ./docker-debug.sh
+   ```
+   
+3. Alternative startup with verbose logging:
+   ```bash
+   ./docker-start.sh
+   ```
+
+#### Common Issues and Solutions
+
+1. **Port conflicts**: Make sure port 8080 is not already in use by another application.
+
+2. **Docker networking issues**: Try rebuilding the Docker images with:
+   ```bash
+   docker-compose down --volumes
+   docker-compose up --build
+   ```
+
+3. **Database connection errors**: Check if the database is running and accessible:
+   ```bash
+   docker-compose exec db psql -U postgres -c "SELECT 1"
+   ```
+
+4. **Container not starting**: Check the logs for errors:
+   ```bash
+   docker-compose logs app
+   ```
+
 ## Development
 
 For local development without Docker:
