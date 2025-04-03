@@ -40,7 +40,7 @@ export default function TaskForm({ onAddTask }: TaskFormProps) {
         />
         <Button
           type="submit"
-          className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-r-lg transition-colors"
+          className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 ml-2 rounded-r-lg transition-colors"
         >
           Add
         </Button>
