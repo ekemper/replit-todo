@@ -31,7 +31,7 @@ This application is containerized with Docker for easy deployment and portabilit
 docker-compose up
 ```
 
-The application will be available at http://localhost:5000
+The application will be available at http://localhost:8080
 
 ### Stopping the Application
 

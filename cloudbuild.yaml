@@ -28,7 +28,7 @@ steps:
       - '--max-instances'
       - '10'
       - '--port'
-      - '5000'
+      - '8080'
 
 # Store images in Google Container Registry
 images:

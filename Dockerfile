@@ -18,11 +18,11 @@ COPY . .
 RUN npm run build
 
 # Expose the application port
-EXPOSE 5000
+EXPOSE 8080
 
 # Healthcheck to verify app is running
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD curl -f http://localhost:5000/api/tasks || exit 1
+  CMD curl -f http://localhost:8080/api/tasks || exit 1
 
 # Start the application
 CMD ["sh", "-c", "node init-db.js && npm run start"]

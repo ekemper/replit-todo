@@ -26,7 +26,7 @@ gcloud run deploy $IMAGE_NAME \
   --update-env-vars DATABASE_URL="$DATABASE_URL" \
   --min-instances=0 \
   --max-instances=10 \
-  --port 5000
+  --port 8080
 
 echo "Deployment completed!"
 echo "Your application should be available at the URL provided above."

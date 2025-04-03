@@ -125,6 +125,8 @@ If you want to use Cloud SQL's private IP or Cloud SQL connector:
 
 ### Database Connection Issues
 
+Note: The application now runs on port 8080 instead of 5000.
+
 1. Check if your Cloud SQL instance is accessible from Cloud Run:
    - Verify that the IP allowlist includes the necessary ranges
    - Consider using Cloud SQL Auth Proxy instead of direct connection
