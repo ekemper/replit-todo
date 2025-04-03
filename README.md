@@ -9,6 +9,8 @@ A simple, responsive todo application built with React featuring task management
 - Filter tasks by status (All, Active, Completed)
 - Persistent storage using PostgreSQL database
 - Responsive design for mobile and desktop
+- Docker support for easy deployment
+- Google Cloud Run deployment configuration
 
 ## Running with Docker
 
@@ -65,9 +67,90 @@ npm run dev
 
 The application uses PostgreSQL for data persistence. The database schema is automatically initialized on first run.
 
+## Deploying to Google Cloud Run
+
+This application can be deployed to Google Cloud Run for serverless container deployment.
+
+### Prerequisites
+
+- Google Cloud account with billing enabled
+- Google Cloud SDK installed and configured
+- Docker installed
+- Access to Google Container Registry or Artifact Registry
+- A PostgreSQL database instance (Cloud SQL or other managed service)
+
+### Deployment Steps
+
+#### Option 1: Using the Deployment Script
+
+1. Update the `cloud-deploy.sh` script with your Google Cloud project ID and other configuration details:
+
+```bash
+# Edit the script
+nano cloud-deploy.sh
+
+# Make it executable
+chmod +x cloud-deploy.sh
+
+# Run the deployment script
+./cloud-deploy.sh
+```
+
+#### Option 2: Using Cloud Build
+
+1. Configure your Google Cloud project:
+
+```bash
+gcloud config set project YOUR_PROJECT_ID
+```
+
+2. Enable required APIs:
+
+```bash
+gcloud services enable cloudbuild.googleapis.com
+gcloud services enable run.googleapis.com
+gcloud services enable artifactregistry.googleapis.com
+```
+
+3. Trigger a build and deployment:
+
+```bash
+gcloud builds submit --config cloudbuild.yaml .
+```
+
+#### Database Configuration
+
+For production deployments, you should use a managed PostgreSQL database service such as Google Cloud SQL:
+
+1. Create a Cloud SQL PostgreSQL instance:
+
+```bash
+gcloud sql instances create todo-app-postgres \
+  --database-version=POSTGRES_15 \
+  --tier=db-f1-micro \
+  --region=us-central1
+```
+
+2. Create a database and user:
+
+```bash
+gcloud sql databases create todoapp --instance=todo-app-postgres
+
+gcloud sql users create todouser \
+  --instance=todo-app-postgres \
+  --password=YOUR_SECURE_PASSWORD
+```
+
+3. Get the connection string and update your Cloud Run service:
+
+```bash
+gcloud run services update todo-app \
+  --update-env-vars DATABASE_URL=postgres://todouser:YOUR_SECURE_PASSWORD@IP_ADDRESS/todoapp
+```
+
 ## Environment Variables
 
-The following environment variables can be set in the Docker environment:
+The following environment variables can be set in the deployment environment:
 
 - `DATABASE_URL`: PostgreSQL connection string
 - `PGUSER`: PostgreSQL username
