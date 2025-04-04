@@ -1,8 +1,0 @@
-config:
-  todo-app:projectName: todo-app
-  todo-app:gcpProject: replace-with-your-gcp-project-id
-  todo-app:gcpRegion: us-central1
-  todo-app:imageTag: latest
-  todo-app:dbInstanceName: todo-db-instance
-  todo-app:dbName: todoapp
-  todo-app:dbUsername: todouser

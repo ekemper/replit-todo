@@ -1,3 +1,0 @@
-name: todo-app
-runtime: nodejs
-description: A Todo application deployment to Google Cloud Run
