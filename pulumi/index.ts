@@ -11,6 +11,7 @@ const imageTag = config.get("imageTag") || "latest";
 const dbInstanceName = config.get("dbInstanceName") || "todo-db-instance";
 const dbName = config.get("dbName") || "todoapp";
 const dbUsername = config.get("dbUsername") || "todouser";
+const dbPassword = config.getSecret("dbPassword") || "changeme"; // Get password from Pulumi config
 
 // Create a GCP Artifact Registry repository for storing the container image
 const repository = new gcp.artifactregistry.Repository("todo-app-repo", {
@@ -64,7 +65,7 @@ const database = new gcp.sql.Database("todo-database", {
 const dbUser = new gcp.sql.User("todo-db-user", {
     name: dbUsername,
     instance: sqlInstance.name,
-    password: "changeme", // Note: Use Pulumi secrets or Secret Manager for real deployments
+    password: dbPassword, // Using password from Pulumi config
 });
 
 // Create a service account for the Cloud Run service
@@ -104,7 +105,7 @@ const service = new gcp.cloudrun.Service("todo-app", {
                     },
                     {
                         name: "DATABASE_URL",
-                        value: pulumi.interpolate`postgres://${dbUsername}:changeme@${sqlInstance.publicIpAddress}:5432/${dbName}`,
+                        value: pulumi.interpolate`postgres://${dbUsername}:${dbPassword}@${sqlInstance.publicIpAddress}:5432/${dbName}`,
                     },
                     {
                         name: "PGHOST",
@@ -116,7 +117,7 @@ const service = new gcp.cloudrun.Service("todo-app", {
                     },
                     {
                         name: "PGPASSWORD",
-                        value: "changeme", // Note: Use Pulumi secrets or Secret Manager for real deployments
+                        value: dbPassword, // Using password from Pulumi config
                     },
                     {
                         name: "PGDATABASE",
@@ -148,4 +149,4 @@ export const serviceUrl = service.statuses.apply(statuses => statuses[0]?.url);
 // Export the Cloud SQL instance connection name
 export const instanceConnectionName = sqlInstance.connectionName;
 // Export the database URL (for reference)
-export const databaseUrl = pulumi.interpolate`postgres://${dbUsername}:changeme@${sqlInstance.publicIpAddress}:5432/${dbName}`;
+export const databaseUrl = pulumi.interpolate`postgres://${dbUsername}:${dbPassword}@${sqlInstance.publicIpAddress}:5432/${dbName}`;

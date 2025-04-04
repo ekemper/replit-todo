@@ -239,17 +239,74 @@ gcloud run services update todo-app \
   --update-env-vars DATABASE_URL=postgres://todouser:YOUR_SECURE_PASSWORD@IP_ADDRESS/todoapp
 ```
 
-## Environment Variables
+## Environment Configuration
 
-The following environment variables can be set in the deployment environment:
+The application uses environment variables for configuration. Two files are provided for easy setup:
 
-- `DATABASE_URL`: PostgreSQL connection string
+- `.env.example`: A template showing all required environment variables
+- `.env`: Your local configuration file (created from the example)
+
+### Environment Variables
+
+The following environment variables can be configured:
+
+#### Node.js Runtime
+- `NODE_ENV`: Set to `development` for local development or `production` for production deployment
+- `PORT`: The port the application will run on locally (default: 5000)
+
+#### Database Configuration
+- `DATABASE_URL`: PostgreSQL connection string (comprehensive connection URL)
 - `PGUSER`: PostgreSQL username
 - `PGHOST`: PostgreSQL host
 - `PGPASSWORD`: PostgreSQL password
 - `PGDATABASE`: PostgreSQL database name
-- `PGPORT`: PostgreSQL port
-- `NODE_ENV`: Node environment (development or production)
+- `PGPORT`: PostgreSQL port (default: 5432)
+
+#### Docker Configuration
+- `DOCKER_DB_HOST`: The hostname for the database in Docker Compose (should be `db`)
+
+#### Google Cloud Configuration (for Pulumi)
+- `GCP_PROJECT_ID`: Your Google Cloud project ID
+- `GCP_REGION`: GCP region for deployment (default: us-central1)
+- `GCP_IMAGE_TAG`: Docker image tag for deployment (default: latest)
+
+#### Pulumi Specific Configuration
+- `PULUMI_PROJECT_NAME`: Name of the Pulumi project (default: todo-app)
+- `PULUMI_DB_INSTANCE_NAME`: Name of the database instance (default: todo-db-instance)
+- `PULUMI_DB_NAME`: Name of the database (default: todoapp)
+- `PULUMI_DB_USERNAME`: Database username (default: todouser)
+- `PULUMI_DB_PASSWORD`: Database password (should be changed for production)
+
+### Setting Up Environment Variables
+
+#### For Local Development
+
+1. Copy the example file:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Edit the `.env` file with your specific configuration:
+   ```bash
+   nano .env
+   ```
+
+3. The application will automatically load variables from the `.env` file when running locally.
+
+#### For Docker Compose
+
+Docker Compose will use the environment variables defined in the `docker-compose.yml` file. No additional setup is required.
+
+#### For Cloud Deployment
+
+1. Update the appropriate deployment configuration:
+   - For cloud-deploy.sh: Edit the script directly
+   - For cloudbuild.yaml: Edit the environment variables section
+   - For Pulumi: Update values in Pulumi.dev.yaml
+
+2. For sensitive values like passwords, use your cloud provider's secrets management system:
+   - Google Secret Manager for GCP
+   - Pulumi secrets for Pulumi deployments
 
 ## License
 
