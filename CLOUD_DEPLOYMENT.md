@@ -1,30 +1,71 @@
-# Google Cloud Run Deployment Guide
+# Google Cloud Deployment Guide
 
-This document provides step-by-step instructions for deploying the Todo application to Google Cloud Run.
+This document provides step-by-step instructions for deploying the Todo application to Google Cloud Platform using the gcloud command-line tool.
 
 ## Prerequisites
 
 1. A Google Cloud Platform account with billing enabled
-2. Google Cloud SDK installed on your local machine
+2. Google Cloud SDK (gcloud CLI) installed and configured on your local machine
 3. Docker installed on your local machine
-4. A PostgreSQL database instance (Cloud SQL or other service)
 
-## Setup Steps
+## Configuration Options
 
-### 1. Initial Setup
+You can deploy the Todo application to Google Cloud in two ways:
 
-1. Clone the repository:
+1. **Interactive deployment script** - Using the provided `cloud-deploy.sh` script which will guide you through the process
+2. **Automated CI/CD pipeline** - Using Cloud Build with the provided `cloudbuild.yaml` configuration
+
+## Option 1: Interactive Deployment
+
+The `cloud-deploy.sh` script provides a guided deployment experience that will:
+
+1. Set up all required Google Cloud resources
+2. Build and push the Docker image
+3. Create a Cloud SQL PostgreSQL database
+4. Deploy the application to Cloud Run
+5. Configure all environment variables
+
+### Step 1: Configure your environment
+
+1. Copy the example environment file:
    ```bash
-   git clone <your-repository-url>
-   cd <repository-directory>
+   cp .env.example .env
    ```
 
-2. Configure your Google Cloud project:
-   ```bash
-   gcloud config set project YOUR_PROJECT_ID
+2. Edit the `.env` file to update the following values:
+   ```
+   GCP_PROJECT_ID=your-google-cloud-project-id
+   GCP_REGION=us-central1
+   GCP_SERVICE_NAME=todo-app
+   GCP_DB_INSTANCE=todo-app-postgres
+   GCP_DB_NAME=todoapp
+   GCP_DB_USER=todouser
+   GCP_DB_PASSWORD=your-secure-password
    ```
 
-3. Enable required APIs:
+### Step 2: Run the deployment script
+
+1. Make the script executable:
+   ```bash
+   chmod +x cloud-deploy.sh
+   ```
+
+2. Run the script:
+   ```bash
+   ./cloud-deploy.sh
+   ```
+
+3. Follow the prompts and wait for the deployment to complete.
+
+4. When deployment is complete, the script will display the URL where your application is available.
+
+## Option 2: Cloud Build Pipeline
+
+For automated CI/CD deployments, you can use Google Cloud Build with the provided configuration.
+
+### Step 1: Set up Cloud Build
+
+1. Enable the required APIs:
    ```bash
    gcloud services enable cloudbuild.googleapis.com
    gcloud services enable run.googleapis.com
@@ -32,18 +73,22 @@ This document provides step-by-step instructions for deploying the Todo applicat
    gcloud services enable sqladmin.googleapis.com
    ```
 
-### 2. Database Setup
+2. Create the Artifact Registry repository:
+   ```bash
+   gcloud artifacts repositories create todo-app-repo \
+     --repository-format=docker \
+     --location=us-central1 \
+     --description="Docker repository for Todo application"
+   ```
 
-1. Create a Cloud SQL PostgreSQL instance:
+3. Set up a Cloud SQL PostgreSQL instance:
    ```bash
    gcloud sql instances create todo-app-postgres \
      --database-version=POSTGRES_15 \
      --tier=db-f1-micro \
-     --region=us-central1
-   ```
+     --region=us-central1 \
+     --root-password=YOUR_SECURE_PASSWORD
 
-2. Create a database and user:
-   ```bash
    gcloud sql databases create todoapp --instance=todo-app-postgres
 
    gcloud sql users create todouser \
@@ -51,122 +96,140 @@ This document provides step-by-step instructions for deploying the Todo applicat
      --password=YOUR_SECURE_PASSWORD
    ```
 
-3. Get connection information:
+4. Get the database IP address:
+   ```bash
+   gcloud sql instances describe todo-app-postgres \
+     --format="value(ipAddresses[0].ipAddress)"
+   ```
+
+### Step 2: Update the Cloud Build configuration
+
+Edit the `cloudbuild.yaml` file to add your database connection details:
+
+```yaml
+substitutions:
+  _REGION: us-central1
+  _SERVICE_NAME: todo-app
+  _REPO_NAME: todo-app-repo
+  _DB_HOST: YOUR_DB_HOST  # Replace with your database IP
+  _DB_USER: todouser
+  _DB_PASSWORD: YOUR_SECURE_PASSWORD
+  _DB_NAME: todoapp
+  _DATABASE_URL: postgres://todouser:YOUR_SECURE_PASSWORD@YOUR_DB_HOST:5432/todoapp
+```
+
+### Step 3: Trigger a build
+
+You can trigger a build manually or connect your repository to Cloud Build for automatic deployments:
+
+```bash
+gcloud builds submit --config cloudbuild.yaml .
+```
+
+## Database Migration and Management
+
+The application is configured to initialize the database schema on first run using Drizzle ORM. For production deployments:
+
+1. Make sure the database user has the necessary permissions:
+   ```bash
+   gcloud sql users set-password todouser \
+     --instance=todo-app-postgres \
+     --password=YOUR_SECURE_PASSWORD
+   ```
+
+2. If you need to manually run migrations:
+   ```bash
+   # Configure connection
+   export DATABASE_URL=postgres://todouser:YOUR_SECURE_PASSWORD@YOUR_DB_HOST:5432/todoapp
+   
+   # Run migration
+   npm run db:push
+   ```
+
+## Environment Variables Reference
+
+The following environment variables are used for deployment:
+
+| Variable | Description | Default Value |
+|----------|-------------|---------------|
+| `GCP_PROJECT_ID` | Google Cloud Project ID | - |
+| `GCP_REGION` | Google Cloud region | us-central1 |
+| `GCP_SERVICE_NAME` | Cloud Run service name | todo-app |
+| `GCP_DB_INSTANCE` | Cloud SQL instance name | todo-app-postgres |
+| `GCP_DB_NAME` | Database name | todoapp |
+| `GCP_DB_USER` | Database username | todouser |
+| `GCP_DB_PASSWORD` | Database password | - |
+
+## Monitoring and Troubleshooting
+
+### Viewing Logs
+
+To view the application logs:
+
+```bash
+gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=todo-app" --limit=20
+```
+
+### Checking Service Status
+
+To check the status of your Cloud Run service:
+
+```bash
+gcloud run services describe todo-app --region=us-central1
+```
+
+### Common Issues
+
+#### Database Connection Errors
+
+If you encounter database connection issues:
+
+1. Verify that the Cloud SQL instance is accessible:
    ```bash
    gcloud sql instances describe todo-app-postgres
    ```
-   Note the `connectionName` and IP address for the next steps.
 
-### 3. Deploy to Cloud Run
-
-#### Option 1: Manual Deployment
-
-1. Update the `cloud-deploy.sh` script with your project ID:
+2. Check that the user has the correct permissions:
    ```bash
-   # Edit PROJECT_ID in the script
-   nano cloud-deploy.sh
+   gcloud sql users list --instance=todo-app-postgres
    ```
 
-2. Set the DATABASE_URL environment variable for your deployment script:
+3. Verify that the environment variables are set correctly:
    ```bash
-   export DATABASE_URL="postgres://todouser:YOUR_SECURE_PASSWORD@IP_ADDRESS/todoapp"
+   gcloud run services describe todo-app --region=us-central1 --format="yaml(spec.template.spec.containers[0].env)"
    ```
 
-3. Make the script executable and run it:
-   ```bash
-   chmod +x cloud-deploy.sh
-   ./cloud-deploy.sh
-   ```
+#### Application Errors
 
-#### Option 2: Using Cloud Build
+If the application fails to start:
 
-1. Submit a build using the cloudbuild.yaml configuration:
-   ```bash
-   gcloud builds submit --config cloudbuild.yaml .
-   ```
-
-2. Update the deployed service with the database connection:
-   ```bash
-   gcloud run services update todo-app \
-     --region=us-central1 \
-     --update-env-vars DATABASE_URL=postgres://todouser:YOUR_SECURE_PASSWORD@IP_ADDRESS/todoapp
-   ```
-
-### 4. Connect Cloud Run to Cloud SQL (Optional)
-
-If you want to use Cloud SQL's private IP or Cloud SQL connector:
-
-1. Connect your Cloud Run service to Cloud SQL:
-   ```bash
-   gcloud run services update todo-app \
-     --add-cloudsql-instances=YOUR_PROJECT_ID:us-central1:todo-app-postgres \
-     --region=us-central1
-   ```
-
-2. Update the DATABASE_URL to use the Cloud SQL connector:
-   ```bash
-   gcloud run services update todo-app \
-     --region=us-central1 \
-     --update-env-vars DATABASE_URL=postgres://todouser:YOUR_SECURE_PASSWORD@/todoapp?host=/cloudsql/YOUR_PROJECT_ID:us-central1:todo-app-postgres
-   ```
-
-### 5. Verify Deployment
-
-1. Get the URL of your deployed app:
-   ```bash
-   gcloud run services describe todo-app \
-     --region=us-central1 \
-     --format="value(status.url)"
-   ```
-
-2. Open the URL in your browser to test the application.
-
-## Troubleshooting
-
-### Database Connection Issues
-
-Note: The application now runs on port 8080 instead of 5000.
-
-1. Check if your Cloud SQL instance is accessible from Cloud Run:
-   - Verify that the IP allowlist includes the necessary ranges
-   - Consider using Cloud SQL Auth Proxy instead of direct connection
-
-2. Verify environment variables:
-   ```bash
-   gcloud run services describe todo-app --region=us-central1
-   ```
-
-### Application Errors
-
-1. Check the logs:
-   ```bash
-   gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=todo-app" --limit=20
-   ```
-
-2. Monitor container startup:
+1. Check the Cloud Run service logs:
    ```bash
    gcloud run services logs read todo-app --region=us-central1
    ```
 
-## Maintenance
+2. Verify that the container starts successfully:
+   ```bash
+   gcloud run services describe todo-app --region=us-central1 --format="yaml(status)"
+   ```
 
-### Updating Your Application
+## Cleanup
 
-1. Make your changes to the codebase
-2. Run the deployment script or use Cloud Build to redeploy
-3. Monitor the deployment in the Google Cloud Console
+To delete all created resources, use the provided cleanup script:
 
-### Database Migrations
+```bash
+chmod +x cloud-cleanup.sh
+./cloud-cleanup.sh
+```
 
-When making schema changes:
+The script will interactively confirm before deleting:
+- The Cloud Run service
+- The Cloud SQL instance
+- The Artifact Registry repository
 
-1. Update your `shared/schema.ts` file
-2. Test locally to ensure migrations work properly
-3. Deploy the updated application, which will run migrations on startup
+## Additional Resources
 
-## Cost Optimization
-
-- Cloud Run only charges for the time your application is running
-- Use the `--min-instances=0` flag to scale to zero when not in use
-- Choose a smaller instance size for development and testing
-- Monitor your usage in the Google Cloud Console billing section
+- [Cloud Run Documentation](https://cloud.google.com/run/docs)
+- [Cloud SQL for PostgreSQL Documentation](https://cloud.google.com/sql/docs/postgres)
+- [Artifact Registry Documentation](https://cloud.google.com/artifact-registry/docs)
+- [gcloud Command-Line Reference](https://cloud.google.com/sdk/gcloud/reference)

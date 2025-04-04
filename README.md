@@ -168,46 +168,11 @@ gcloud services enable artifactregistry.googleapis.com
 
 ```bash
 gcloud builds submit --config cloudbuild.yaml .
+
+For detailed deployment instructions, see the [Cloud Deployment Guide](CLOUD_DEPLOYMENT.md).
+
 ```
 
-#### Option 3: Using Pulumi (Infrastructure as Code)
-
-This repository includes a Pulumi project for deploying the application using Infrastructure as Code principles.
-
-1. Navigate to the Pulumi directory:
-
-```bash
-cd pulumi
-```
-
-2. Make sure you have the Pulumi CLI installed.
-
-3. Configure your Google Cloud project ID in `Pulumi.dev.yaml`:
-
-```bash
-# Edit manually or use:
-sed -i "s/replace-with-your-gcp-project-id/YOUR_GCP_PROJECT_ID/g" Pulumi.dev.yaml
-```
-
-4. Deploy using the convenience script:
-
-```bash
-./deploy.sh
-```
-
-The Pulumi deployment will:
-- Create a Google Artifact Registry repository
-- Build and push the Docker image
-- Create a Cloud SQL PostgreSQL instance
-- Set up the database and user
-- Deploy the application to Cloud Run
-- Configure all necessary IAM permissions
-
-To destroy all created resources:
-
-```bash
-./destroy.sh
-```
 
 ### Database Configuration
 
@@ -265,17 +230,10 @@ The following environment variables can be configured:
 #### Docker Configuration
 - `DOCKER_DB_HOST`: The hostname for the database in Docker Compose (should be `db`)
 
-#### Google Cloud Configuration (for Pulumi)
+#### Google Cloud Configuration
 - `GCP_PROJECT_ID`: Your Google Cloud project ID
 - `GCP_REGION`: GCP region for deployment (default: us-central1)
 - `GCP_IMAGE_TAG`: Docker image tag for deployment (default: latest)
-
-#### Pulumi Specific Configuration
-- `PULUMI_PROJECT_NAME`: Name of the Pulumi project (default: todo-app)
-- `PULUMI_DB_INSTANCE_NAME`: Name of the database instance (default: todo-db-instance)
-- `PULUMI_DB_NAME`: Name of the database (default: todoapp)
-- `PULUMI_DB_USERNAME`: Database username (default: todouser)
-- `PULUMI_DB_PASSWORD`: Database password (should be changed for production)
 
 ### Setting Up Environment Variables
 
@@ -299,14 +257,23 @@ Docker Compose will use the environment variables defined in the `docker-compose
 
 #### For Cloud Deployment
 
-1. Update the appropriate deployment configuration:
-   - For cloud-deploy.sh: Edit the script directly
-   - For cloudbuild.yaml: Edit the environment variables section
-   - For Pulumi: Update values in Pulumi.dev.yaml
+1. Update the `.env` file with your Google Cloud configuration
+2. The deployment script will use these values automatically
+3. For automated CI/CD, update the `cloudbuild.yaml` substitution variables
 
-2. For sensitive values like passwords, use your cloud provider's secrets management system:
-   - Google Secret Manager for GCP
-   - Pulumi secrets for Pulumi deployments
+4. For sensitive values like passwords, use Google Secret Manager:
+   ```bash
+   # Create a secret
+   gcloud secrets create DB_PASSWORD --replication-policy="automatic"
+   
+   # Add the secret value
+   echo "your-secure-password" | gcloud secrets versions add DB_PASSWORD --data-file=-
+   
+   # Grant the Cloud Run service account access
+   gcloud secrets add-iam-policy-binding DB_PASSWORD \
+     --member="serviceAccount:service-account-name@project-id.iam.gserviceaccount.com" \
+     --role="roles/secretmanager.secretAccessor"
+   ```
 
 ## License
 

@@ -1,11 +1,11 @@
 steps:
   # Build the container image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/todo-app:$COMMIT_SHA', '.']
+    args: ['build', '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/${_SERVICE_NAME}:${COMMIT_SHA}', '.']
 
-  # Push the container image to Container Registry
+  # Push the container image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/todo-app:$COMMIT_SHA']
+    args: ['push', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/${_SERVICE_NAME}:${COMMIT_SHA}']
 
   # Deploy container image to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -13,16 +13,16 @@ steps:
     args:
       - 'run'
       - 'deploy'
-      - 'todo-app'
+      - '${_SERVICE_NAME}'
       - '--image'
-      - 'gcr.io/$PROJECT_ID/todo-app:$COMMIT_SHA'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/${_SERVICE_NAME}:${COMMIT_SHA}'
       - '--region'
-      - 'us-central1'
+      - '${_REGION}'
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
       - '--set-env-vars'
-      - 'NODE_ENV=production'
+      - 'NODE_ENV=production,DATABASE_URL=${_DATABASE_URL},PGHOST=${_DB_HOST},PGUSER=${_DB_USER},PGPASSWORD=${_DB_PASSWORD},PGDATABASE=${_DB_NAME},PGPORT=5432'
       - '--min-instances'
       - '0'
       - '--max-instances'
@@ -30,8 +30,18 @@ steps:
       - '--port'
       - '8080'
 
-# Store images in Google Container Registry
+substitutions:
+  _REGION: us-central1
+  _SERVICE_NAME: todo-app
+  _REPO_NAME: todo-app-repo
+  _DB_HOST: YOUR_DB_HOST  # Replace with your database host
+  _DB_USER: todouser  # Replace with your database user
+  _DB_PASSWORD: changeme  # Replace with your database password
+  _DB_NAME: todoapp  # Replace with your database name
+  _DATABASE_URL: postgres://todouser:changeme@YOUR_DB_HOST:5432/todoapp  # Replace with your full connection URL
+
+# Store images in Artifact Registry
 images:
-  - 'gcr.io/$PROJECT_ID/todo-app:$COMMIT_SHA'
+  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/${_SERVICE_NAME}:${COMMIT_SHA}'
 
 timeout: '1200s'
